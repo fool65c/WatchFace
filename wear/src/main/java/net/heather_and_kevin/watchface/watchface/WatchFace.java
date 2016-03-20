@@ -23,8 +23,13 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RadialGradient;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -53,14 +58,54 @@ public class WatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
+    /**
+     * mager testing
+     */
+//    IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+//    Intent batteryStatus = context.registerReceiver(null, ifilter);
+
+
     @Override
     public Engine onCreateEngine() {
         return new Engine();
     }
 
+    private static class EngineHandler extends Handler {
+        private final WeakReference<WatchFace.Engine> mWeakReference;
+
+        public EngineHandler(WatchFace.Engine reference) {
+            mWeakReference = new WeakReference<>(reference);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            WatchFace.Engine engine = mWeakReference.get();
+            if (engine != null) {
+                switch (msg.what) {
+                    case MSG_UPDATE_TIME:
+                        engine.handleUpdateTimeMessage();
+                        break;
+                }
+            }
+        }
+    }
+
     private class Engine extends CanvasWatchFaceService.Engine {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
+        boolean mRegisteredTimeZoneReceiver = false;
+        Paint mBackgroundPaint;
 
+        //mager testing
+        Paint mTickPaint;
+        Paint mHourPaint;
+        Paint mMinutePaint;
+        Paint mSecondPaint;
+        // end testing
+
+
+        Paint mHandPaint;
+        boolean mAmbient;
+        Time mTime;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -68,13 +113,6 @@ public class WatchFace extends CanvasWatchFaceService {
                 mTime.setToNow();
             }
         };
-        boolean mRegisteredTimeZoneReceiver = false;
-
-        Paint mBackgroundPaint;
-        Paint mHandPaint;
-
-        boolean mAmbient;
-        Time mTime;
         int mTapCount;
 
         /**
@@ -98,6 +136,19 @@ public class WatchFace extends CanvasWatchFaceService {
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
+
+            mTickPaint = new Paint();
+            mTickPaint.setColor(resources.getColor(R.color.test1));
+
+            mHourPaint= new Paint();
+            mHourPaint.setColor(resources.getColor(R.color.test2));
+
+            mMinutePaint= new Paint();
+            mMinutePaint.setColor(resources.getColor(R.color.test3));
+
+            mSecondPaint= new Paint();
+            mSecondPaint.setColor(resources.getColor(R.color.test4));
+
 
             mHandPaint = new Paint();
             mHandPaint.setColor(resources.getColor(R.color.analog_hands));
@@ -170,41 +221,107 @@ public class WatchFace extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             mTime.setToNow();
 
-            // Draw the background.
-            if (isInAmbientMode()) {
-                canvas.drawColor(Color.BLACK);
-            } else {
-                canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
+            int faceWidth = bounds.width();
+            int faceHeight = bounds.height();
+            float xCenter = faceWidth / 2.0f;
+            float yCenter = faceHeight / 2.0f;
+
+            //draw background
+            canvas.drawRect(0, 0, faceWidth, faceHeight, mBackgroundPaint);
+
+            //draw tick marks
+            float hourTickWidth = 6.0f;
+            float minuteTickWidth = 3.0f;
+            float hourTickHeight = 35.0f;
+            float minuteTickHeight = 20.0f;
+            float tickOffsef = 10f;
+            float tickWidth, tickHeight, angle;
+            RectF r;
+
+            for (int i = 0; i < 60; i++) {
+                if (i % 5 == 0) {
+                    tickWidth = hourTickWidth;
+                    tickHeight = hourTickHeight;
+                } else {
+                    tickWidth = minuteTickWidth;
+                    tickHeight = minuteTickHeight;
+                }
+                angle = i * 360f / 60f;
+                canvas.save();
+                canvas.rotate(angle, xCenter, yCenter);
+                r = new RectF(xCenter - tickWidth / 2f,tickHeight,xCenter + tickWidth / 2,tickOffsef);
+                canvas.drawRect(r, mTickPaint);
+                canvas.restore();
             }
 
-            // Find the center. Ignore the window insets so that, on round watches with a
-            // "chin", the watch face is centered on the entire screen, not just the usable
-            // portion.
-            float centerX = bounds.width() / 2f;
-            float centerY = bounds.height() / 2f;
+            // draw hours / minute / second hands
+            float baseMountWitdh = 7f;
+            float baseMountHole = 3f;
+            float hourHandWidth = 3.0f;
+            float hourHandLength = xCenter / 2f;
+            float minuteHandWidth = 3.0f;
+            float minuteHandLength = yCenter * 0.75f;
+            float handOffsetLength = 15f;
+            float secondHandWidth = 1f;
+            float secondHandLength = yCenter * 0.75f;
 
-            float secRot = mTime.second / 30f * (float) Math.PI;
-            int minutes = mTime.minute;
-            float minRot = minutes / 30f * (float) Math.PI;
-            float hrRot = ((mTime.hour + (minutes / 60f)) / 6f ) * (float) Math.PI;
+            //calculate hours
+            angle = mTime.hour / 12f * 360f + mTime.minute / 60f * 1f / 12f * 360f;
 
-            float secLength = centerX - 20;
-            float minLength = centerX - 40;
-            float hrLength = centerX - 80;
+            //display hours
+            canvas.save();
+            canvas.rotate(angle, xCenter, yCenter);
+            canvas.drawRect(xCenter - hourHandWidth, yCenter - hourHandLength, xCenter + hourHandWidth, yCenter + handOffsetLength, mMinutePaint);
+            Path triangle = new Path();
+            triangle.moveTo(xCenter - hourHandWidth, yCenter - hourHandLength);
+            triangle.rLineTo(hourHandWidth, -2 * hourHandWidth);
+            triangle.rLineTo(hourHandWidth, 2 * hourHandWidth);
+            triangle.rLineTo(-2 * hourHandWidth, 0f);
+            canvas.drawPath(triangle, mSecondPaint);
+            canvas.drawLine(xCenter, yCenter + handOffsetLength, xCenter, yCenter - hourHandLength, mSecondPaint);
+            canvas.restore();
 
-            if (!mAmbient) {
-                float secX = (float) Math.sin(secRot) * secLength;
-                float secY = (float) -Math.cos(secRot) * secLength;
-                canvas.drawLine(centerX, centerY, centerX + secX, centerY + secY, mHandPaint);
+            //calculate minutes
+            angle = mTime.minute / 60f * 360f + mTime.second / 60f * 1f / 60f * 360f;
+
+            //display minutes
+            canvas.save();
+            canvas.rotate(angle, xCenter, yCenter);
+            canvas.drawRect(xCenter - minuteHandWidth, yCenter - minuteHandLength, xCenter + minuteHandWidth, yCenter + handOffsetLength, mMinutePaint);
+            triangle = new Path();
+            triangle.moveTo(xCenter - minuteHandWidth, yCenter - minuteHandLength);
+            triangle.rLineTo(minuteHandWidth, -2 * minuteHandWidth);
+            triangle.rLineTo(minuteHandWidth, 2 * minuteHandWidth);
+            triangle.rLineTo(-2 * minuteHandWidth, 0f);
+            canvas.drawPath(triangle, mSecondPaint);
+            canvas.drawLine(xCenter, yCenter + handOffsetLength, xCenter, yCenter - minuteHandLength, mSecondPaint);
+            canvas.restore();
+
+            //calculate seconds
+            if (!isInAmbientMode()) {
+                angle = mTime.second / 60f * 360f;
+
+                //display seconds
+                canvas.save();
+                canvas.rotate(angle, xCenter, yCenter);
+                canvas.drawRect(xCenter - secondHandWidth, yCenter - secondHandLength, xCenter + secondHandWidth, yCenter + handOffsetLength, mMinutePaint);
+                triangle = new Path();
+                triangle.moveTo(xCenter - secondHandWidth, yCenter - secondHandLength);
+                triangle.rLineTo(secondHandWidth, -2 * secondHandWidth);
+                triangle.rLineTo(secondHandWidth, 2 * secondHandWidth);
+                triangle.rLineTo(-2 * secondHandWidth, 0f);
+                canvas.drawPath(triangle, mSecondPaint);
+                canvas.restore();
             }
 
-            float minX = (float) Math.sin(minRot) * minLength;
-            float minY = (float) -Math.cos(minRot) * minLength;
-            canvas.drawLine(centerX, centerY, centerX + minX, centerY + minY, mHandPaint);
+            //cork it off with a hole punched through the middle
+            canvas.drawCircle(xCenter, yCenter, baseMountWitdh, mHourPaint);
+            canvas.drawCircle(xCenter, yCenter, baseMountHole, mBackgroundPaint);
 
-            float hrX = (float) Math.sin(hrRot) * hrLength;
-            float hrY = (float) -Math.cos(hrRot) * hrLength;
-            canvas.drawLine(centerX, centerY, centerX + hrX, centerY + hrY, mHandPaint);
+            //display other information
+            if (!isInAmbientMode()) {
+
+            }
         }
 
         @Override
@@ -272,26 +389,6 @@ public class WatchFace extends CanvasWatchFaceService {
                 long delayMs = INTERACTIVE_UPDATE_RATE_MS
                         - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
-            }
-        }
-    }
-
-    private static class EngineHandler extends Handler {
-        private final WeakReference<WatchFace.Engine> mWeakReference;
-
-        public EngineHandler(WatchFace.Engine reference) {
-            mWeakReference = new WeakReference<>(reference);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            WatchFace.Engine engine = mWeakReference.get();
-            if (engine != null) {
-                switch (msg.what) {
-                    case MSG_UPDATE_TIME:
-                        engine.handleUpdateTimeMessage();
-                        break;
-                }
             }
         }
     }
