@@ -39,8 +39,6 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.view.SurfaceHolder;
 
-import net.heather_and_kevin.watchface.watchface.ClockTick.ClockTick;
-
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -105,10 +103,7 @@ public class WatchFace extends CanvasWatchFaceService {
         /**
          * Tick Mark Configuration
          */
-        private float hourTickWidth = 6.0f;
-        private float minuteTickWidth = 2.5f;
         private float hourTickHeight = 30.0f;
-        private float minuteTickHeight = 20.0f;
 
         /**
          * Chin size
@@ -121,7 +116,6 @@ public class WatchFace extends CanvasWatchFaceService {
         private ClockHand hourHand;
         private ClockHand minuteHand;
         private ClockHand secondHand;
-        private ClockTick clockTicks;
         private float baseMountWidth = 8f;
         private float baseMountSecondWidth = 4f;
         private float baseMountHole = 2f;
@@ -166,9 +160,6 @@ public class WatchFace extends CanvasWatchFaceService {
                 batteryPercent = level / (float)scale;
             }
         };
-
-
-        int mTapCount;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -228,8 +219,6 @@ public class WatchFace extends CanvasWatchFaceService {
             hourHand = new ClockHand(mHandPaint, mHandTipPaint, hourHandWidth, R.color.handAccentColor);
             minuteHand = new ClockHand(mHandPaint, mHandTipPaint, minuteHandWidth, R.color.handAccentColor);
             secondHand = new ClockHand(mSecondHandPaint, mHandTipPaint, secondHandWidth, handOffsetLength * 2f);
-
-            clockTicks = new ClockTick(hourTickHeight,hourTickWidth,minuteTickHeight,minuteTickWidth,mTickPaint);
 
             mTime = new Time();
             calander = Calendar.getInstance();
@@ -339,11 +328,6 @@ public class WatchFace extends CanvasWatchFaceService {
 
 
             }
-
-
-
-            //draw ticks
-//            clockTicks.drawTickMarks(faceWidth, faceHeight, mChinSize, canvas);
 
             // draw hours / minute / second hands
             //calculate hours
