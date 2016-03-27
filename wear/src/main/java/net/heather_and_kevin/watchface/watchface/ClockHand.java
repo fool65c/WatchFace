@@ -23,7 +23,7 @@ public class ClockHand {
     private int gradientColor;
     private float top;
 
-    public ClockHand(Paint paint, Paint handTipPaint, float handWidth, float handOffSetLength, int gradientColor) {
+    public ClockHand(Paint paint, Paint handTipPaint, float handWidth, int gradientColor) {
         this.gradientColor = gradientColor;
         init(paint, handTipPaint, handWidth, handOffSetLength);
     }
@@ -43,10 +43,10 @@ public class ClockHand {
 
         this.gradientHandPaint.setShader(new LinearGradient(0,
                 0 ,
-                this.halfWidth * 0.5f,
+                this.halfWidth / 2f,
                 0,
-                this.handPaint.getColor(), this.gradientColor,
-                Shader.TileMode.MIRROR));
+                this.gradientColor, this.handPaint.getColor(),
+                Shader.TileMode.REPEAT));
 
         this.handPaintOpening = new Paint(handTipPaint);
         this.handPaintOpening.setStyle(Paint.Style.STROKE);
@@ -57,37 +57,29 @@ public class ClockHand {
         this.handLength = handLength;
     }
 
-    public void drawHand(Canvas canvas, float xCenter, float yCenter, float angle, boolean useGradient) {
+    public void drawHand(Canvas canvas, float xCenter, float yCenter, float angle) {
         canvas.save();
         canvas.rotate(angle, xCenter, yCenter);
 
-        if (useGradient) {
-            canvas.drawRect(xCenter - this.halfWidth,
-                    yCenter - this.handLength,
-                    xCenter + this.halfWidth,
-                    yCenter + this.handOffSetLength,
-                    this.gradientHandPaint);
-
-        } else {
             canvas.drawRect(xCenter - this.halfWidth,
                     yCenter - this.handLength,
                     xCenter + this.halfWidth,
                     yCenter + this.handOffSetLength,
                     this.handPaint);
 
-        }
+//
+//
+//        canvas.drawRect(xCenter - this.halfWidth + this.borderWidth / 2,
+//                yCenter - this.handLength,
+//                xCenter + this.halfWidth - this.borderWidth / 2,
+//                yCenter + this.handOffSetLength,
+//                this.handPaintOpening);
 
-        canvas.drawRect(xCenter - this.halfWidth + this.borderWidth / 2,
-                yCenter - this.handLength,
-                xCenter + this.halfWidth - this.borderWidth / 2,
-                yCenter + this.handOffSetLength,
-                this.handPaintOpening);
-
-        Path triangle = new Path();
-        triangle.moveTo(xCenter - this.halfWidth, yCenter - this.handLength);
-        triangle.rLineTo(this.halfWidth, - this.handWidth);
-        triangle.rLineTo(this.halfWidth, this.handWidth);
-        canvas.drawPath(triangle, this.handTipPaint);
+//        Path triangle = new Path();
+//        triangle.moveTo(xCenter - this.halfWidth, yCenter - this.handLength);
+//        triangle.rLineTo(this.halfWidth, - this.handWidth);
+//        triangle.rLineTo(this.halfWidth, this.handWidth);
+//        canvas.drawPath(triangle, this.handTipPaint);
         canvas.restore();
     }
 }

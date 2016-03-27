@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#000000</color>
-    <color name="background2">#000088</color>
+    <color name="background">#333333</color>
+    <color name="backgroundAmbient">#000000</color>
     <color name="tickColor">#E5E4E2</color>
     <color name="handColor">#E5E4E2</color>
-    <color name="handAccentColor">#FFFFFF</color>
+    <color name="handAccentColor">#C35817</color>
     <color name="handTipColor">#C35817</color>
+    <color name="accessoryColor">#262626</color>
+    <color name="accessoryBackGroundColor">#1a1a1a</color>
     <color name="secondHandColor">#C35817</color>
     <color name="test">#772D1E</color>
 </resources>
